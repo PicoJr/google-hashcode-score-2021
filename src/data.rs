@@ -52,7 +52,7 @@ pub struct InputBody {
     pub(crate) car_paths: Vec<CarPath>,
 }
 
-// For Parser only
+// For parser only
 #[derive(Debug, PartialEq)]
 pub struct PInputData {
     pub(crate) header: InputHeader,
@@ -65,13 +65,23 @@ pub struct InputData {
     pub(crate) body: InputBody,
 }
 
-#[derive(Debug)]
-pub struct OutputData {
-    // TODO add fields
+// For parser only
+#[derive(Debug, PartialEq)]
+pub struct PIntersectionSchedule {
+    pub(crate) intersection_id: usize,
+    pub(crate) incoming_streets: usize,
+    pub(crate) light_schedules: Vec<(String, usize)>,
+}
+
+// For parser only
+#[derive(Debug, PartialEq)]
+pub struct POutputData {
+    pub(crate) schedules: usize,
+    pub(crate) intersection_schedules: Vec<PIntersectionSchedule>,
 }
 
 // You can remove this clippy rule override once this function is implemented
-#[allow(unused_variables,dead_code)]
-pub fn score(input: &InputData, output: &OutputData) -> anyhow::Result<Score> {
+#[allow(unused_variables, dead_code)]
+pub fn score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
     Ok(0)
 }

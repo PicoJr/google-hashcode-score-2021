@@ -1,4 +1,6 @@
-use crate::data::{InputHeader, PCarPath, PInputBody, PInputData, PStreet};
+use crate::data::{
+    InputHeader, PCarPath, PInputBody, PInputData, PIntersectionSchedule, POutputData, PStreet,
+};
 use anyhow::bail;
 use nom::bytes::complete::{tag, take_while1, take_while_m_n};
 use nom::combinator::{map_res, verify};
@@ -117,20 +119,70 @@ fn parse_input_body<'a>(s: &'a str, header: &InputHeader) -> Res<&'a str, PInput
     Ok((out, PInputBody { streets, car_paths }))
 }
 
-// You can remove this clippy rule override once this function is implemented
-#[allow(unused_variables)]
-/// Parse input file content as a `InputData`
-///
-/// s: input file content
-///
-/// returns InputData parsed from input file content
+fn _parse_input(s: &str) -> Res<&str, PInputData> {
+    let (out, header) = input_header_line(s)?;
+    let (out, body) = parse_input_body(out, &header)?;
+    Ok((out, PInputData { header, body }))
+}
+
 pub fn parse_input(s: &str) -> anyhow::Result<PInputData> {
-    match input_header_line(s) {
-        Ok((out, header)) => match parse_input_body(out, &header) {
-            Ok((out, body)) => Ok(PInputData { header, body }),
-            Err(nom::Err::Error(err)) => bail!("{}", convert_error(s, err.clone())),
-            _ => unreachable!(),
+    match _parse_input(s) {
+        Ok((_, data)) => Ok(data),
+        Err(nom::Err::Error(err)) => bail!("{}", convert_error(s, err.clone())),
+        _ => unreachable!(),
+    }
+}
+
+fn light_schedule(s: &str) -> Res<&str, (&str, N)> {
+    let (out, (street_name, _, light_duration)) =
+        tuple((non_space_or_unix_eol, single_space, positive_number))(s)?;
+    Ok((out, (street_name, light_duration)))
+}
+
+fn intersection_schedule(s: &str) -> Res<&str, PIntersectionSchedule> {
+    let (out, intersection_id) =
+        context("intersection_id", terminated(positive_number, tag("\n")))(s)?;
+    let (out, incoming_streets) =
+        context("incoming_streets", terminated(positive_number, tag("\n")))(out)?;
+    let (out, light_schedules) = context(
+        "light schedules",
+        many_m_n(
+            incoming_streets,
+            incoming_streets,
+            terminated(light_schedule, tag("\n")),
+        ),
+    )(out)?;
+    Ok((
+        out,
+        PIntersectionSchedule {
+            intersection_id,
+            incoming_streets,
+            light_schedules: light_schedules
+                .iter()
+                .map(|(street_name, duration)| (String::from(*street_name), *duration))
+                .collect(),
         },
+    ))
+}
+
+fn _parse_output(s: &str) -> Res<&str, POutputData> {
+    let (out, schedules) = context("schedules", terminated(positive_number, tag("\n")))(s)?;
+    let (out, intersection_schedules) = context(
+        "intersection schedules",
+        many_m_n(schedules, schedules, intersection_schedule),
+    )(out)?;
+    Ok((
+        out,
+        POutputData {
+            schedules,
+            intersection_schedules,
+        },
+    ))
+}
+
+pub fn parse_output(s: &str) -> anyhow::Result<POutputData> {
+    match _parse_output(s) {
+        Ok((_, data)) => Ok(data),
         Err(nom::Err::Error(err)) => bail!("{}", convert_error(s, err.clone())),
         _ => unreachable!(),
     }
@@ -138,10 +190,13 @@ pub fn parse_input(s: &str) -> anyhow::Result<PInputData> {
 
 #[cfg(test)]
 mod tests {
-    use crate::data::{InputHeader, PCarPath, PInputBody, PInputData, PStreet};
+    use crate::data::{
+        InputHeader, PCarPath, PInputBody, PInputData, PIntersectionSchedule, POutputData, PStreet,
+    };
     use crate::parser::{
-        car_path, car_path_line, input_header, input_header_line, number, parse_input,
-        positive_number, single_space, str_list_exact, street, street_line,
+        car_path, car_path_line, input_header, input_header_line, intersection_schedule,
+        light_schedule, number, parse_input, parse_output, positive_number, single_space,
+        str_list_exact, street, street_line,
     };
 
     #[test]
@@ -279,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn test_example() {
+    fn test_example_input() {
         let input = "6 4 5 2 1000\n\
                            2 0 rue-de-londres 1\n\
                            0 1 rue-d-amsterdam 1\n\
@@ -352,6 +407,73 @@ mod tests {
                         },
                     ]
                 }
+            }
+        )
+    }
+
+    #[test]
+    fn test_light_schedule() {
+        let ls = light_schedule("hello-street 4");
+        assert_eq!(ls, Ok(("", ("hello-street", 4))));
+    }
+
+    #[test]
+    fn test_intersection_schedule() {
+        let ls = intersection_schedule("1\n2\nrue-d-athenes 2\nrue-d-amsterdam 1\n");
+        assert_eq!(
+            ls,
+            Ok((
+                "",
+                PIntersectionSchedule {
+                    intersection_id: 1,
+                    incoming_streets: 2,
+                    light_schedules: vec![
+                        ("rue-d-athenes".to_string(), 2),
+                        ("rue-d-amsterdam".to_string(), 1)
+                    ]
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn test_example_output() {
+        let output = "3\n\
+                           1\n\
+                           2\n\
+                           rue-d-athenes 2\n\
+                           rue-d-amsterdam 1\n\
+                           0\n\
+                           1\n\
+                           rue-de-londres 2\n\
+                           2\n\
+                           1\n\
+                           rue-de-moscou 1\n";
+        let d = parse_output(output);
+        assert_eq!(
+            d.unwrap(),
+            POutputData {
+                schedules: 3,
+                intersection_schedules: vec![
+                    PIntersectionSchedule {
+                        intersection_id: 1,
+                        incoming_streets: 2,
+                        light_schedules: vec![
+                            ("rue-d-athenes".to_string(), 2),
+                            ("rue-d-amsterdam".to_string(), 1)
+                        ]
+                    },
+                    PIntersectionSchedule {
+                        intersection_id: 0,
+                        incoming_streets: 1,
+                        light_schedules: vec![("rue-de-londres".to_string(), 2)]
+                    },
+                    PIntersectionSchedule {
+                        intersection_id: 2,
+                        incoming_streets: 1,
+                        light_schedules: vec![("rue-de-moscou".to_string(), 1)]
+                    },
+                ]
             }
         )
     }

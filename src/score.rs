@@ -119,16 +119,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
     let mut street_queues: HashMap<StreetId, VecDeque<CarId>> = HashMap::new();
     for car_tracker in &car_trackers {
         if let Some(Waiting(street_id)) = car_tracker.actions.front() {
-            match street_queues.get_mut(street_id) {
-                None => {
-                    let mut queue: VecDeque<CarId> = VecDeque::new();
-                    queue.push_back(car_tracker.id);
-                    street_queues.insert(*street_id, queue);
-                }
-                Some(queue) => {
-                    queue.push_back(car_tracker.id);
-                }
-            }
+            street_queues.entry(*street_id).or_insert_with(VecDeque::new).push_back(car_tracker.id);
         }
     }
 
@@ -176,16 +167,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                         // retrieve next action
                         Some(Waiting(street_id)) => {
                             // queue up
-                            match street_queues.get_mut(street_id) {
-                                None => {
-                                    let mut queue: VecDeque<CarId> = VecDeque::new();
-                                    queue.push_back(car_tracker.id);
-                                    street_queues.insert(*street_id, queue);
-                                }
-                                Some(queue) => {
-                                    queue.push_back(car_tracker.id);
-                                }
-                            }
+                            street_queues.entry(*street_id).or_insert_with(VecDeque::new).push_back(car_tracker.id);
                         }
                         None => {
                             // empty actions, car is finished

@@ -3,9 +3,10 @@ extern crate clap;
 extern crate anyhow;
 
 use crate::parser::{parse_input, parse_output};
-use crate::score::compute_score;
+use crate::score::{compute_score, Score};
 use anyhow::bail;
 use log::info;
+use num_format::{Locale, ToFormattedString};
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -25,6 +26,7 @@ fn main() -> anyhow::Result<()> {
     let output_files = matches
         .values_of("output")
         .expect("output files compulsory");
+    let many = input_files.len() > 1;
     if input_files.len() != output_files.len() {
         bail!(
             "{} output files provided but expected {}",
@@ -32,6 +34,7 @@ fn main() -> anyhow::Result<()> {
             input_files.len()
         );
     }
+    let mut total_score: Score = 0;
     let input_output_files = input_files.zip(output_files);
     for (input_file_path, output_file_path) in input_output_files {
         let path = PathBuf::from_str(output_file_path)?;
@@ -46,7 +49,13 @@ fn main() -> anyhow::Result<()> {
         let input_data = parse_input(&input_content)?;
 
         let score = compute_score(&input_data, &output_data)?;
-        println!("{} score: {}", output_file_path, score);
+        total_score += score;
+        let formatted_score = score.to_formatted_string(&Locale::en);
+        println!("{} score: {}", output_file_path, formatted_score);
+    }
+    if many {
+        let formatted_score = total_score.to_formatted_string(&Locale::en);
+        println!("total score: {}", formatted_score);
     }
     Ok(())
 }

@@ -57,6 +57,27 @@ fn build_light_schedule(
     Ok(light_schedule_of_street)
 }
 
+fn car_trackers_score(
+    car_trackers: &[CarTracker],
+    simulation_duration: Time,
+    bonus: Score,
+) -> anyhow::Result<Score> {
+    let mut score: Score = 0;
+    for car_tracker in car_trackers {
+        match car_tracker.actions.front() {
+            None => bail!("no actions for car {} after simulation", car_tracker.id),
+            Some(Action::Finished(time)) => {
+                let time_matlab = time + 1;
+                if time_matlab <= simulation_duration {
+                    score += bonus + (simulation_duration - time_matlab);
+                }
+            }
+            _ => {} // car did not finish => 0 points
+        }
+    }
+    Ok(score)
+}
+
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
     let mut street_name_id: HashMap<String, StreetId> = HashMap::new();
     let mut length_of_street: HashMap<StreetId, StreetLength> = HashMap::new();
@@ -177,21 +198,11 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             }
         }
     }
-    // compute score
-    let mut score: Score = 0;
-    for car_tracker in &car_trackers {
-        match car_tracker.actions.front() {
-            None => bail!("no actions for car {} after simulation", car_tracker.id),
-            Some(Action::Finished(time)) => {
-                let time_matlab = time + 1;
-                if time_matlab <= input.header.simulation_duration {
-                    score += input.header.bonus + (input.header.simulation_duration - time_matlab);
-                }
-            }
-            _ => {} // car did not finish => 0 points
-        }
-    }
-    Ok(score)
+    car_trackers_score(
+        &car_trackers,
+        input.header.simulation_duration,
+        input.header.bonus,
+    )
 }
 
 #[cfg(test)]

@@ -136,6 +136,9 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
         }
         // move at most one car out of intersection if light is green
         for (street_id, street_queue) in street_queues.iter_mut() {
+            if street_queue.is_empty() {
+                continue;
+            }
             let light_schedule = light_schedule_of_street.get(street_id);
             if let Some(light_schedule) = light_schedule {
                 if is_green(time, light_schedule) {

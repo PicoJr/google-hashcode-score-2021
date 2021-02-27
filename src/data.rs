@@ -17,26 +17,11 @@ pub struct PStreet {
     pub(crate) street_length: usize,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Street {
-    pub(crate) intersection_start: usize,
-    pub(crate) intersection_end: usize,
-    pub(crate) street_id: usize,
-    // use integer instead of String for performance (gotta be fast)
-    pub(crate) street_length: usize,
-}
-
 // For parser only
 #[derive(Debug, PartialEq)]
 pub struct PCarPath {
     pub(crate) streets: usize,
     pub(crate) street_names: Vec<String>, // slow
-}
-
-#[derive(Debug, PartialEq)]
-pub struct CarPath {
-    pub(crate) streets: usize,
-    pub(crate) street_ids: Vec<usize>, // use integer instead of String for performance (gotta be fast)
 }
 
 // For parser only
@@ -46,23 +31,11 @@ pub struct PInputBody {
     pub(crate) car_paths: Vec<PCarPath>,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct InputBody {
-    pub(crate) streets: Vec<Street>,
-    pub(crate) car_paths: Vec<CarPath>,
-}
-
 // For parser only
 #[derive(Debug, PartialEq)]
 pub struct PInputData {
     pub(crate) header: InputHeader,
     pub(crate) body: PInputBody,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct InputData {
-    pub(crate) header: InputHeader,
-    pub(crate) body: InputBody,
 }
 
 // For parser only

@@ -28,4 +28,4 @@ out/f.out score: 1,408,553
 total score: 9,573,454
 ```
 
-Note: it takes about **20s** on my desktop pc (`AMD Ryzen 7 3700X`)
+Note: it takes about **8s** on my desktop pc (`AMD Ryzen 7 3700X`)

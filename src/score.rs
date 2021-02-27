@@ -8,14 +8,13 @@ use log::debug;
 
 pub(crate) type Score = usize;
 type StreetId = usize;
-type IntersectionId = usize;
 type StreetLength = usize;
 type Time = usize;
 type CarId = usize;
 
 #[derive(Debug)]
 enum Action {
-    Waiting(StreetId, IntersectionId),
+    Waiting(StreetId),
     Driving(StreetId, StreetLength),
     Finished(Time),
 }
@@ -60,11 +59,9 @@ fn build_light_schedule(
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
     let mut street_name_id: HashMap<String, StreetId> = HashMap::new();
-    let mut intersection_end_of_street: HashMap<StreetId, IntersectionId> = HashMap::new();
     let mut length_of_street: HashMap<StreetId, StreetLength> = HashMap::new();
     for (street_id, street) in input.body.streets.iter().enumerate() {
         street_name_id.insert(street.street_name.clone(), street_id);
-        intersection_end_of_street.insert(street_id, street.intersection_end);
         length_of_street.insert(street_id, street.street_length);
     }
 
@@ -78,9 +75,6 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             let street_id = street_name_id
                 .get(street_name)
                 .ok_or_else(|| anyhow!("unknown street name"))?;
-            let intersection_id = intersection_end_of_street
-                .get(street_id)
-                .ok_or_else(|| anyhow!("unknown street name"))?;
             let street_length = length_of_street
                 .get(street_id)
                 .ok_or_else(|| anyhow!("unknown street length"))?;
@@ -88,7 +82,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                 // start at the end of first street
                 actions.push_back(Driving(*street_id, *street_length))
             }
-            actions.push_back(Waiting(*street_id, *intersection_id));
+            actions.push_back(Waiting(*street_id));
         }
         // remove last action (car does not wait at the end of its path)
         debug!("car {}: actions: {:?}", car_id, actions);
@@ -103,7 +97,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
 
     let mut street_queues: HashMap<StreetId, VecDeque<CarId>> = HashMap::new();
     for car_tracker in &car_trackers {
-        if let Some(Waiting(street_id, _intersection_id)) = car_tracker.actions.front() {
+        if let Some(Waiting(street_id)) = car_tracker.actions.front() {
             match street_queues.get_mut(street_id) {
                 None => {
                     let mut queue: VecDeque<CarId> = VecDeque::new();
@@ -141,7 +135,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                         // it means this car will move by one on its next street right away
                         car_tracker.distance_current_street = 1;
                         match car_tracker.actions.pop_front() {
-                            Some(Waiting(_, _)) => {}
+                            Some(Waiting(_)) => {}
                             Some(action) => bail!("unexpected action: {:?}", action),
                             _ => bail!("missing driving action after waiting"),
                         }
@@ -159,7 +153,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                     car_tracker.actions.pop_front(); // discard driving action
                     match car_tracker.actions.front() {
                         // retrieve next action
-                        Some(Waiting(street_id, _intersection_id)) => {
+                        Some(Waiting(street_id)) => {
                             // queue up
                             match street_queues.get_mut(street_id) {
                                 None => {

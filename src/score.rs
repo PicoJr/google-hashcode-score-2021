@@ -35,16 +35,10 @@ fn is_green(time: Time, light_schedule: &LightSchedule) -> bool {
     offset <= tmod && tmod < offset + duration
 }
 
-pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
-    let mut street_name_id: HashMap<String, StreetId> = HashMap::new();
-    let mut intersection_end_of_street: HashMap<StreetId, IntersectionId> = HashMap::new();
-    let mut length_of_street: HashMap<StreetId, StreetLength> = HashMap::new();
-    for (street_id, street) in input.body.streets.iter().enumerate() {
-        street_name_id.insert(street.street_name.clone(), street_id);
-        intersection_end_of_street.insert(street_id, street.intersection_end);
-        length_of_street.insert(street_id, street.street_length);
-    }
-
+fn build_light_schedule(
+    output: &POutputData,
+    street_name_id: &HashMap<String, StreetId>,
+) -> anyhow::Result<HashMap<StreetId, LightSchedule>> {
     let mut light_schedule_of_street: HashMap<StreetId, LightSchedule> = HashMap::new();
     for intersection_schedule in &output.intersection_schedules {
         let mut offset: usize = 0;
@@ -61,6 +55,21 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             offset += light_duration;
         }
     }
+    Ok(light_schedule_of_street)
+}
+
+pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
+    let mut street_name_id: HashMap<String, StreetId> = HashMap::new();
+    let mut intersection_end_of_street: HashMap<StreetId, IntersectionId> = HashMap::new();
+    let mut length_of_street: HashMap<StreetId, StreetLength> = HashMap::new();
+    for (street_id, street) in input.body.streets.iter().enumerate() {
+        street_name_id.insert(street.street_name.clone(), street_id);
+        intersection_end_of_street.insert(street_id, street.intersection_end);
+        length_of_street.insert(street_id, street.street_length);
+    }
+
+    let light_schedule_of_street: HashMap<StreetId, LightSchedule> =
+        build_light_schedule(output, &street_name_id)?;
 
     let mut car_trackers: Vec<CarTracker> = vec![];
     for (car_id, car_path) in input.body.car_paths.iter().enumerate() {

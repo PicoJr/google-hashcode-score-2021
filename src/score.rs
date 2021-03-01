@@ -4,8 +4,10 @@ use anyhow::anyhow;
 use anyhow::bail;
 use nom::lib::std::collections::VecDeque;
 
+use fxhash::FxBuildHasher;
+use indexmap::IndexMap;
 use log::debug;
-use rustc_hash::FxHashMap;
+type FxIndexMap<K, V> = IndexMap<K, V, FxBuildHasher>;
 
 pub(crate) type Score = usize;
 type StreetId = usize;
@@ -37,9 +39,9 @@ fn is_green(time: Time, light_schedule: &LightSchedule) -> bool {
 
 fn build_light_schedule(
     output: &POutputData,
-    street_name_id: &FxHashMap<String, StreetId>,
-) -> anyhow::Result<FxHashMap<StreetId, LightSchedule>> {
-    let mut light_schedule_of_street: FxHashMap<StreetId, LightSchedule> = FxHashMap::default();
+    street_name_id: &FxIndexMap<String, StreetId>,
+) -> anyhow::Result<FxIndexMap<StreetId, LightSchedule>> {
+    let mut light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> = FxIndexMap::default();
     for intersection_schedule in &output.intersection_schedules {
         let mut offset: usize = 0;
         let period: usize = intersection_schedule
@@ -80,14 +82,14 @@ fn car_trackers_score(
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
-    let mut street_name_id: FxHashMap<String, StreetId> = FxHashMap::default();
-    let mut length_of_street: FxHashMap<StreetId, StreetLength> = FxHashMap::default();
+    let mut street_name_id: FxIndexMap<String, StreetId> = FxIndexMap::default();
+    let mut length_of_street: FxIndexMap<StreetId, StreetLength> = FxIndexMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
         street_name_id.insert(street.street_name.clone(), street_id);
         length_of_street.insert(street_id, street.street_length);
     }
 
-    let light_schedule_of_street: FxHashMap<StreetId, LightSchedule> =
+    let light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> =
         build_light_schedule(output, &street_name_id)?;
 
     let mut car_trackers: Vec<CarTracker> = vec![];
@@ -117,7 +119,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
         })
     }
 
-    let mut street_queues: FxHashMap<StreetId, VecDeque<CarId>> = FxHashMap::default();
+    let mut street_queues: FxIndexMap<StreetId, VecDeque<CarId>> = FxIndexMap::default();
     for car_tracker in &car_trackers {
         if let Some(Waiting(street_id)) = car_tracker.actions.front() {
             street_queues

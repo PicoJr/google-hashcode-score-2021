@@ -35,6 +35,6 @@ cpu: `AMD Ryzen 7 3700X`
 ```
 ❯ hyperfine "./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out"
 Benchmark #1: ./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out
-  Time (mean ± σ):      1.345 s ±  0.011 s    [User: 1.323 s, System: 0.019 s]
-  Range (min … max):    1.321 s …  1.359 s    10 runs
+  Time (mean ± σ):     714.7 ms ±  15.6 ms    [User: 693.1 ms, System: 19.6 ms]
+  Range (min … max):   694.2 ms … 736.0 ms    10 runs
 ```

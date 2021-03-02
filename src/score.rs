@@ -136,11 +136,11 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                 car_tracker.distance_current_street += 1;
             }
         }
+        // remove empty queues
+        street_queues.retain(|_street_id, street_queue| !street_queue.is_empty());
+
         // move at most one car out of intersection if light is green
         for (street_id, street_queue) in street_queues.iter_mut() {
-            if street_queue.is_empty() {
-                continue;
-            }
             let light_schedule = light_schedule_of_street.get(street_id);
             if let Some(light_schedule) = light_schedule {
                 if is_green(time, light_schedule) {

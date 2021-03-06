@@ -1,7 +1,6 @@
 use crate::data::{PInputData, POutputData};
 use crate::score::Action::{Driving, Waiting};
 use anyhow::anyhow;
-use anyhow::bail;
 use nom::lib::std::collections::VecDeque;
 
 use ahash::AHashMap;
@@ -62,27 +61,6 @@ fn build_light_schedule(
     Ok(light_schedule_of_street)
 }
 
-fn car_trackers_score(
-    car_trackers: &[CarTracker],
-    simulation_duration: Time,
-    bonus: Score,
-) -> anyhow::Result<Score> {
-    let mut score: Score = 0;
-    for car_tracker in car_trackers {
-        match car_tracker.actions.front() {
-            None => bail!("no actions for car {} after simulation", car_tracker.id),
-            Some(Action::Finished(time)) => {
-                let time_matlab = time + 1;
-                if time_matlab <= simulation_duration {
-                    score += bonus + (simulation_duration - time_matlab);
-                }
-            }
-            _ => {} // car did not finish => 0 points
-        }
-    }
-    Ok(score)
-}
-
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
     let mut street_name_id_length: AHashMap<String, (StreetId, StreetLength)> = AHashMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
@@ -129,6 +107,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
         }
     }
 
+    let mut score: Score = 0;
     for time in 0..input.header.simulation_duration {
         // move cars not stuck at intersections
         for car_tracker in car_trackers.iter_mut() {
@@ -155,11 +134,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                         // There is no delay while a car passes through an intersection
                         // it means this car will move by one on its next street right away
                         car_tracker.distance_current_street = 1;
-                        match car_tracker.actions.pop_front() {
-                            Some(Waiting(_)) => {}
-                            Some(action) => bail!("unexpected action: {:?}", action),
-                            _ => bail!("missing driving action after waiting"),
-                        }
+                        car_tracker.actions.pop_front(); // car no longer waiting
                     }
                 }
             }
@@ -185,6 +160,11 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
                             // empty actions, car is finished
                             debug!("car {} finished with time {}", car_tracker.id, time);
                             car_tracker.actions.push_back(Action::Finished(time));
+                            let time_matlab = time + 1;
+                            if time_matlab <= input.header.simulation_duration {
+                                score += input.header.bonus
+                                    + (input.header.simulation_duration - time_matlab)
+                            }
                         }
                         _ => unreachable!(),
                     }
@@ -192,11 +172,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             }
         }
     }
-    car_trackers_score(
-        &car_trackers,
-        input.header.simulation_duration,
-        input.header.bonus,
-    )
+    Ok(score)
 }
 
 #[cfg(test)]

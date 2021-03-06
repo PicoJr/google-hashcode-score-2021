@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
         info!("parsing {}", input_file_path);
         let input_data = parse_input(&input_content)?;
 
-        let score = compute_score(&input_data, &output_data)?;
+        let score = compute_score(&input_data, &output_data);
         total_score += score;
         let formatted_score = score.to_formatted_string(&Locale::en);
         println!("{} score: {}", output_file_path, formatted_score);

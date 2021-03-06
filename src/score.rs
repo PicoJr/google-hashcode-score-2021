@@ -1,6 +1,5 @@
 use crate::data::{PInputData, POutputData};
 use crate::score::Action::{Driving, Waiting};
-use anyhow::anyhow;
 use nom::lib::std::collections::VecDeque;
 
 use ahash::AHashMap;
@@ -41,7 +40,7 @@ fn is_green(time: Time, light_schedule: &LightSchedule) -> bool {
 fn build_light_schedule(
     output: &POutputData,
     street_name_id_length: &AHashMap<String, (StreetId, StreetLength)>,
-) -> anyhow::Result<AHashMap<StreetId, LightSchedule>> {
+) -> AHashMap<StreetId, LightSchedule> {
     let mut light_schedule_of_street: AHashMap<StreetId, LightSchedule> = AHashMap::default();
     for intersection_schedule in &output.intersection_schedules {
         let mut offset: usize = 0;
@@ -53,15 +52,15 @@ fn build_light_schedule(
         for (street_name, light_duration) in &intersection_schedule.light_schedules {
             let (street_id, _) = street_name_id_length
                 .get(street_name)
-                .ok_or_else(|| anyhow!("unknown street id (should not happen)"))?;
+                .expect("unknown street name");
             light_schedule_of_street.insert(*street_id, (offset, *light_duration, period));
             offset += light_duration;
         }
     }
-    Ok(light_schedule_of_street)
+    light_schedule_of_street
 }
 
-pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
+pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
     let mut street_name_id_length: AHashMap<String, (StreetId, StreetLength)> = AHashMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
         street_name_id_length.insert(
@@ -71,17 +70,23 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
     }
 
     let light_schedule_of_street: AHashMap<StreetId, LightSchedule> =
-        build_light_schedule(output, &street_name_id_length)?;
+        build_light_schedule(output, &street_name_id_length);
 
     let mut car_trackers: Vec<CarTracker> = vec![];
+    let mut street_queues: FxIndexMap<StreetId, VecDeque<CarId>> = FxIndexMap::default();
     for (car_id, car_path) in input.body.car_paths.iter().enumerate() {
         let mut actions: VecDeque<Action> = VecDeque::new();
         for (i, street_name) in car_path.street_names.iter().enumerate() {
             let (street_id, street_length) = street_name_id_length
                 .get(street_name)
-                .ok_or_else(|| anyhow!("unknown street name"))?;
-            if i != 0 {
-                // start at the end of first street
+                .expect("unknown street name");
+            if i == 0 {
+                street_queues
+                    .entry(*street_id)
+                    .or_insert_with(VecDeque::new)
+                    .push_back(car_id);
+            } else {
+                // car start at the end of first street
                 actions.push_back(Driving(*street_id, *street_length))
             }
             actions.push_back(Waiting(*street_id));
@@ -95,16 +100,6 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             actions,
             distance_current_street: 0,
         })
-    }
-
-    let mut street_queues: FxIndexMap<StreetId, VecDeque<CarId>> = FxIndexMap::default();
-    for car_tracker in &car_trackers {
-        if let Some(Waiting(street_id)) = car_tracker.actions.front() {
-            street_queues
-                .entry(*street_id)
-                .or_insert_with(VecDeque::new)
-                .push_back(car_tracker.id);
-        }
     }
 
     let mut score: Score = 0;
@@ -172,7 +167,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
             }
         }
     }
-    Ok(score)
+    score
 }
 
 #[cfg(test)]
@@ -185,6 +180,6 @@ mod tests {
         let input_data = test_data::get_example_input_data();
         let output_data = test_data::get_example_output_data();
         let score = compute_score(&input_data, &output_data);
-        assert_eq!(score.unwrap(), 1002);
+        assert_eq!(score, 1002);
     }
 }

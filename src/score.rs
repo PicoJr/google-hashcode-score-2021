@@ -4,9 +4,11 @@ use anyhow::anyhow;
 use anyhow::bail;
 use nom::lib::std::collections::VecDeque;
 
+use ahash::AHashMap;
 use fxhash::FxBuildHasher;
 use indexmap::IndexMap;
 use log::debug;
+
 type FxIndexMap<K, V> = IndexMap<K, V, FxBuildHasher>;
 
 pub(crate) type Score = usize;
@@ -39,9 +41,9 @@ fn is_green(time: Time, light_schedule: &LightSchedule) -> bool {
 
 fn build_light_schedule(
     output: &POutputData,
-    street_name_id_length: &FxIndexMap<String, (StreetId, StreetLength)>,
-) -> anyhow::Result<FxIndexMap<StreetId, LightSchedule>> {
-    let mut light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> = FxIndexMap::default();
+    street_name_id_length: &AHashMap<String, (StreetId, StreetLength)>,
+) -> anyhow::Result<AHashMap<StreetId, LightSchedule>> {
+    let mut light_schedule_of_street: AHashMap<StreetId, LightSchedule> = AHashMap::default();
     for intersection_schedule in &output.intersection_schedules {
         let mut offset: usize = 0;
         let period: usize = intersection_schedule
@@ -82,8 +84,7 @@ fn car_trackers_score(
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
-    let mut street_name_id_length: FxIndexMap<String, (StreetId, StreetLength)> =
-        FxIndexMap::default();
+    let mut street_name_id_length: AHashMap<String, (StreetId, StreetLength)> = AHashMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
         street_name_id_length.insert(
             street.street_name.clone(),
@@ -91,7 +92,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
         );
     }
 
-    let light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> =
+    let light_schedule_of_street: AHashMap<StreetId, LightSchedule> =
         build_light_schedule(output, &street_name_id_length)?;
 
     let mut car_trackers: Vec<CarTracker> = vec![];

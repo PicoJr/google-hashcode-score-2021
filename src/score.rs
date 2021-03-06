@@ -39,7 +39,7 @@ fn is_green(time: Time, light_schedule: &LightSchedule) -> bool {
 
 fn build_light_schedule(
     output: &POutputData,
-    street_name_id: &FxIndexMap<String, StreetId>,
+    street_name_id_length: &FxIndexMap<String, (StreetId, StreetLength)>,
 ) -> anyhow::Result<FxIndexMap<StreetId, LightSchedule>> {
     let mut light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> = FxIndexMap::default();
     for intersection_schedule in &output.intersection_schedules {
@@ -50,7 +50,7 @@ fn build_light_schedule(
             .map(|(_, duration)| duration)
             .sum();
         for (street_name, light_duration) in &intersection_schedule.light_schedules {
-            let street_id = street_name_id
+            let (street_id, _) = street_name_id_length
                 .get(street_name)
                 .ok_or_else(|| anyhow!("unknown street id (should not happen)"))?;
             light_schedule_of_street.insert(*street_id, (offset, *light_duration, period));
@@ -82,26 +82,20 @@ fn car_trackers_score(
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
-    let mut street_name_id: FxIndexMap<String, StreetId> = FxIndexMap::default();
-    let mut length_of_street: FxIndexMap<StreetId, StreetLength> = FxIndexMap::default();
+    let mut street_name_id_length: FxIndexMap<String, (StreetId, StreetLength)> = FxIndexMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
-        street_name_id.insert(street.street_name.clone(), street_id);
-        length_of_street.insert(street_id, street.street_length);
+        street_name_id_length.insert(street.street_name.clone(), (street_id, street.street_length));
     }
 
     let light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> =
-        build_light_schedule(output, &street_name_id)?;
+        build_light_schedule(output, &street_name_id_length)?;
 
     let mut car_trackers: Vec<CarTracker> = vec![];
     for (car_id, car_path) in input.body.car_paths.iter().enumerate() {
         let mut actions: VecDeque<Action> = VecDeque::new();
         for (i, street_name) in car_path.street_names.iter().enumerate() {
-            let street_id = street_name_id
-                .get(street_name)
+            let (street_id, street_length) =  street_name_id_length.get(street_name)
                 .ok_or_else(|| anyhow!("unknown street name"))?;
-            let street_length = length_of_street
-                .get(street_id)
-                .ok_or_else(|| anyhow!("unknown street length"))?;
             if i != 0 {
                 // start at the end of first street
                 actions.push_back(Driving(*street_id, *street_length))

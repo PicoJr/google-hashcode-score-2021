@@ -6,7 +6,9 @@ It gives the same results as Google for our submissions.
 
 It gives the sames result for the example file as well.
 
-Caution: It may not be robust against incorrect submission file.
+**Caution**: It may not be robust against incorrect submission file.
+
+**Note:** `out` folder is **not provided**, it will be uploaded once the extended round is over.
 
 ## Quickstart
 
@@ -35,6 +37,6 @@ cpu: `AMD Ryzen 7 3700X`
 ```
 ❯ hyperfine "./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out"
 Benchmark #1: ./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out
-  Time (mean ± σ):     349.0 ms ±   6.0 ms    [User: 331.8 ms, System: 14.8 ms]
-  Range (min … max):   337.2 ms … 356.8 ms    10 runs
+  Time (mean ± σ):     328.7 ms ±  10.9 ms    [User: 315.8 ms, System: 12.3 ms]
+  Range (min … max):   310.5 ms … 342.1 ms    10 runs
 ```

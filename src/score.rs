@@ -104,15 +104,6 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
 
     let mut score: Score = 0;
     for time in 0..input.header.simulation_duration {
-        // move cars not stuck at intersections
-        for car_tracker in car_trackers.iter_mut() {
-            if let Some(Driving(_, _)) = car_tracker.actions.front() {
-                car_tracker.distance_current_street += 1;
-            }
-        }
-        // remove empty queues
-        street_queues.retain(|_street_id, street_queue| !street_queue.is_empty());
-
         // move at most one car out of intersection if light is green
         for (street_id, street_queue) in street_queues.iter_mut() {
             let light_schedule = light_schedule_of_street.get(street_id);
@@ -135,7 +126,11 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
             }
         }
 
-        // set car at the end of their street to waiting or finished
+        // remove empty queues
+        street_queues.retain(|_street_id, street_queue| !street_queue.is_empty());
+
+        // set cars at the end of their street to waiting or finished
+        // move cars still in transit
         for car_tracker in car_trackers.iter_mut() {
             if let Some(Driving(_, street_length)) = car_tracker.actions.front() {
                 if car_tracker.distance_current_street >= *street_length {
@@ -163,6 +158,9 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
                         }
                         _ => unreachable!(),
                     }
+                } else {
+                    // move car
+                    car_tracker.distance_current_street += 1;
                 }
             }
         }

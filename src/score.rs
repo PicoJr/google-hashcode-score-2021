@@ -82,9 +82,13 @@ fn car_trackers_score(
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result<Score> {
-    let mut street_name_id_length: FxIndexMap<String, (StreetId, StreetLength)> = FxIndexMap::default();
+    let mut street_name_id_length: FxIndexMap<String, (StreetId, StreetLength)> =
+        FxIndexMap::default();
     for (street_id, street) in input.body.streets.iter().enumerate() {
-        street_name_id_length.insert(street.street_name.clone(), (street_id, street.street_length));
+        street_name_id_length.insert(
+            street.street_name.clone(),
+            (street_id, street.street_length),
+        );
     }
 
     let light_schedule_of_street: FxIndexMap<StreetId, LightSchedule> =
@@ -94,7 +98,8 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> anyhow::Result
     for (car_id, car_path) in input.body.car_paths.iter().enumerate() {
         let mut actions: VecDeque<Action> = VecDeque::new();
         for (i, street_name) in car_path.street_names.iter().enumerate() {
-            let (street_id, street_length) =  street_name_id_length.get(street_name)
+            let (street_id, street_length) = street_name_id_length
+                .get(street_name)
                 .ok_or_else(|| anyhow!("unknown street name"))?;
             if i != 0 {
                 // start at the end of first street

@@ -40,8 +40,14 @@ Optimizations in chronological order.
 |:---|---:|---:|---:|---:|
 | `./target/release/ghc2021-score-single-indexmap res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out` | 1.640 ± 0.026 | 1.602 | 1.677 | 1.00 |
 
-## Use AHashMap and IndexMap
+## Use AHashMap and IndexMap (a77e3de)
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
 | `./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out` | 1.534 ± 0.014 | 1.517 | 1.570 | 1.00 |
+
+## Factorize code (49c4fe3)
+
+| Command | Mean [s] | Min [s] | Max [s] | Relative |
+|:---|---:|---:|---:|---:|
+| `./target/release/ghc2021-score res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out` | 1.309 ± 0.015 | 1.289 | 1.340 | 1.00 |

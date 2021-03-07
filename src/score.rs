@@ -41,23 +41,33 @@ fn build_light_schedule(
     output: &POutputData,
     street_name_id_length: &AHashMap<String, (StreetId, StreetLength)>,
 ) -> AHashMap<StreetId, LightSchedule> {
-    let mut light_schedule_of_street: AHashMap<StreetId, LightSchedule> = AHashMap::default();
-    for intersection_schedule in &output.intersection_schedules {
-        let mut offset: usize = 0;
-        let period: usize = intersection_schedule
-            .light_schedules
-            .iter()
-            .map(|(_, duration)| duration)
-            .sum();
-        for (street_name, light_duration) in &intersection_schedule.light_schedules {
-            let (street_id, _) = street_name_id_length
-                .get(street_name)
-                .expect("unknown street name");
-            light_schedule_of_street.insert(*street_id, (offset, *light_duration, period));
-            offset += light_duration;
-        }
-    }
-    light_schedule_of_street
+    let light_schedules = output
+        .intersection_schedules
+        .iter()
+        .map(|intersection_schedule| {
+            let period: usize = intersection_schedule
+                .light_schedules
+                .iter()
+                .map(|(_, duration)| duration)
+                .sum();
+            let mut offset: usize = 0;
+            let intersection_light_schedule = intersection_schedule.light_schedules.iter().map(
+                |(street_name, light_duration)| {
+                    offset += light_duration;
+                    let (street_id, _) = street_name_id_length
+                        .get(street_name)
+                        .expect("unknown street name");
+                    (
+                        *street_id,
+                        (offset - *light_duration, *light_duration, period),
+                    )
+                },
+            );
+            intersection_light_schedule.collect::<Vec<(StreetId, LightSchedule)>>()
+        })
+        .flatten()
+        .collect::<AHashMap<StreetId, LightSchedule>>();
+    light_schedules
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {

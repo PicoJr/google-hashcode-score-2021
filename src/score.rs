@@ -91,6 +91,7 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
     let mut street_queues: FxIndexMap<StreetId, VecDeque<CarId>> = FxIndexMap::default();
     for (car_id, car_path) in input.body.car_paths.iter().enumerate() {
         let mut actions: VecDeque<Action> = VecDeque::new();
+        let streets = car_path.streets;
         for (i, street_name) in car_path.street_names.iter().enumerate() {
             let (street_id, street_length) = street_name_id_length
                 .get(street_name)
@@ -104,11 +105,11 @@ pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
                 // car start at the end of first street
                 actions.push_back(Driving(*street_id, *street_length))
             }
-            actions.push_back(Waiting(*street_id));
+            if i != (streets - 1) {
+                // wait at the end of all streets except last one
+                actions.push_back(Waiting(*street_id));
+            }
         }
-        // remove last action (car does not wait at the end of its path)
-        debug!("car {}: actions: {:?}", car_id, actions);
-        actions.pop_back();
         debug!("car {}: actions: {:?}", car_id, actions);
         car_trackers.push(CarTracker {
             id: car_id,

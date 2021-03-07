@@ -61,13 +61,18 @@ fn build_light_schedule(
 }
 
 pub fn compute_score(input: &PInputData, output: &POutputData) -> Score {
-    let mut street_name_id_length: AHashMap<String, (StreetId, StreetLength)> = AHashMap::default();
-    for (street_id, street) in input.body.streets.iter().enumerate() {
-        street_name_id_length.insert(
-            street.street_name.clone(),
-            (street_id, street.street_length),
-        );
-    }
+    let street_name_id_length = input
+        .body
+        .streets
+        .iter()
+        .enumerate()
+        .map(|(street_id, street)| {
+            (
+                street.street_name.clone(),
+                (street_id, street.street_length),
+            )
+        })
+        .collect::<AHashMap<String, (StreetId, StreetLength)>>();
 
     let light_schedule_of_street: AHashMap<StreetId, LightSchedule> =
         build_light_schedule(output, &street_name_id_length);

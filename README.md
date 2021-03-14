@@ -8,8 +8,6 @@ It gives the sames result for the example file as well.
 
 **Caution**: It may not be robust against incorrect submission file.
 
-**Note:** `out` folder is **not provided**, it will be uploaded once the extended round is over.
-
 ## Quickstart
 
 example:

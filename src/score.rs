@@ -56,7 +56,7 @@ fn build_light_schedule(
                     offset += light_duration;
                     let (street_id, _) = street_name_id_length
                         .get(street_name)
-                        .expect("unknown street name");
+                        .unwrap_or_else(|| panic!("unknown street name: {}", street_name));
                     (
                         *street_id,
                         (offset - *light_duration, *light_duration, period),

@@ -1,3 +1,5 @@
+[![GitHub license](https://img.shields.io/github/license/PicoJr/google-hashcode-score-2021)](https://github.com/PicoJr/google-hashcode-score-2021/blob/master/LICENSE)
+
 # Google Hashcode 2021 Score Calculator
 
 Computes Google Hashcode 2021 Qualification Round score.

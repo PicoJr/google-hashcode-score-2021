@@ -6,19 +6,33 @@ Computes Google Hashcode 2021 Qualification Round score.
 
 It gives the same results as Google for our submissions.
 
-It gives the sames result for the example file as well.
+It gives the same result for the example file as well.
 
 **Caution**: It may not be robust against incorrect submission file.
 
 ## Quickstart
 
-example:
+### Install Rust Toolchain using rustup
+
+cf https://www.rust-lang.org/learn/get-started
+
+#### On Unix
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+#### On Windows
+
+refer to https://rustup.rs (download and run `rustup-init.exe`)
+
+### Compile and run
 
 ```
 cargo run --release -- res/a.txt res/b.txt res/c.txt res/d.txt res/e.txt res/f.txt -o out/a.out out/b.out out/c.out out/d.out out/e.out out/f.out
 ```
 
-example output:
+output:
 
 ```
 out/a.out score: 2,002
